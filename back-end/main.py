@@ -11,6 +11,8 @@ neo4j_uri = os.getenv("NEO4J_URI")
 # Initialize the driver
 driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
+
+# Create a user node
 def create_user_node(name):
    with driver.session() as session:
       session.write_transaction(_create_and_return_user, name)
@@ -23,39 +25,68 @@ def _create_and_return_user(tx, name):
    result = tx.run(query, name=name)
    return result.single()
 
-def create_like_relationship(user_name, soccer_name):
-   with driver.session() as session:
-      session.write_transaction(_create_like_relationship, user_name, soccer_name)
 
-def _create_like_relationship(tx, user_name, soccer_name):
+# Create a hobby node
+def create_hobby_node(name):
+   with driver.session() as session:
+      session.write_transaction(_create_and_return_hobby, name)
+
+def _create_and_return_hobby(tx, name):
    query = (
-      "MATCH (u:User {name: $user_name}), (s:Soccer {name: $soccer_name}) "
-      "CREATE (u)-[:LIKE]->(s) "
-      "RETURN u, s"
+      "CREATE (h:Hobby {name: $name}) "
+      "RETURN h"
    )
-   result = tx.run(query, user_name=user_name, soccer_name=soccer_name)
+   result = tx.run(query, name=name)
    return result.single()
 
-def find_users_who_like_soccer():
+
+# Create a user like relationship to a hobby
+def create_like_relationship(user_name, hobby_name):
    with driver.session() as session:
-      result = session.execute_read(_find_users_who_like_soccer)
-      return result
+      session.write_transaction(_create_like_relationship, user_name, hobby_name)
 
-def _find_users_who_like_soccer(tx):
+def _create_like_relationship(tx, user_name, hobby_name):
    query = (
-      "MATCH (u:User)-[:LIKE]->(s:Soccer)"
-      "RETURN u"
+      "MATCH (u:User {name: $user_name}) "
+      "MATCH (h:Hobby {name: $hobby_name}) "
+      "CREATE (u)-[:LIKES]->(h)"
    )
-   result = tx.run(query)
-   return [record["u"] for record in result]
+   tx.run(query, user_name=user_name, hobby_name=hobby_name)
 
-# Example usage
-# create_user_node("Alice")
-# create_like_relationship("Alice", "Soccer")
 
-users_who_like_soccer = find_users_who_like_soccer()
-for user in users_who_like_soccer:
-   print(user.get("name"))
+# Find all users that like a hobby
+def find_users_that_like_hobby(hobby_name):
+   with driver.session() as session:
+      return session.read_transaction(_find_users_that_like_hobby, hobby_name)
+
+def _find_users_that_like_hobby(tx, hobby_name):
+   query = (
+      "MATCH (u:User)-[:LIKES]->(h:Hobby {name: $hobby_name}) "
+      "RETURN u.name"
+   )
+   result = tx.run(query, hobby_name=hobby_name)
+   return [record["u.name"] for record in result]
+
+
+# Main function
+def main():
+   # create_user_node("Alice")
+   # create_user_node("Bob")
+   # create_user_node("Charlie")
+
+   # create_hobby_node("Swimming")
+   # create_hobby_node("Running")
+   # create_hobby_node("Cycling")
+
+   # create_like_relationship("Alice", "Swimming")
+   # create_like_relationship("Alice", "Running")
+   # create_like_relationship("Bob", "Running")
+   # create_like_relationship("Charlie", "Cycling")
+
+   print(find_users_that_like_hobby("Running"))
+
+main()
 
 # Close the driver
 driver.close()
+

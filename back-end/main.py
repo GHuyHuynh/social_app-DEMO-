@@ -15,7 +15,7 @@ driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 # Create a user node
 def create_user_node(name):
    with driver.session() as session:
-      session.write_transaction(_create_and_return_user, name)
+      session.execute_write(_create_and_return_user, name)
 
 def _create_and_return_user(tx, name):
    query = (
@@ -29,7 +29,7 @@ def _create_and_return_user(tx, name):
 # Create a hobby node
 def create_hobby_node(name):
    with driver.session() as session:
-      session.write_transaction(_create_and_return_hobby, name)
+      session.execute_write(_create_and_return_hobby, name)
 
 def _create_and_return_hobby(tx, name):
    query = (
@@ -43,7 +43,7 @@ def _create_and_return_hobby(tx, name):
 # Create an event node and relate it to multiple hobbies
 def create_event_node(event_name, hobby_names):
    with driver.session() as session:
-      session.write_transaction(_create_and_return_event, event_name, hobby_names)
+      session.execute_write(_create_and_return_event, event_name, hobby_names)
 
 def _create_and_return_event(tx, event_name, hobby_names):
    query = (
@@ -62,7 +62,7 @@ def _create_and_return_event(tx, event_name, hobby_names):
 # Create an attends relationship between a user and an event
 def create_attends_relationship(user_name, event_name):
    with driver.session() as session:
-      session.write_transaction(_create_attends_relationship, user_name, event_name)
+      session.execute_write(_create_attends_relationship, user_name, event_name)
 
 def _create_attends_relationship(tx, user_name, event_name):
    query = (
@@ -77,7 +77,7 @@ def _create_attends_relationship(tx, user_name, event_name):
 # Create a user like relationship to a hobby
 def create_like_hobby_relationship(user_name, hobby_name):
    with driver.session() as session:
-      session.write_transaction(_create_like_hobby_relationship, user_name, hobby_name)
+      session.execute_write(_create_like_hobby_relationship, user_name, hobby_name)
 
 def _create_like_hobby_relationship(tx, user_name, hobby_name):
    query = (
@@ -91,7 +91,7 @@ def _create_like_hobby_relationship(tx, user_name, hobby_name):
 # Find all users that like a hobby
 def find_users_that_like_hobby(hobby_name):
    with driver.session() as session:
-      return session.read_transaction(_find_users_that_like_hobby, hobby_name)
+      return session.execute_read(_find_users_that_like_hobby, hobby_name)
 
 def _find_users_that_like_hobby(tx, hobby_name):
    query = (
@@ -105,7 +105,7 @@ def _find_users_that_like_hobby(tx, hobby_name):
 # Find all users that attend an event
 def find_users_that_attend_event(event_name):
    with driver.session() as session:
-      return session.read_transaction(_find_users_that_attend_event, event_name)
+      return session.execute_read(_find_users_that_attend_event, event_name)
 
 def _find_users_that_attend_event(tx, event_name):
    query = (
@@ -119,7 +119,7 @@ def _find_users_that_attend_event(tx, event_name):
 # Find all events for a user
 def find_events_for_user(username):
    with driver.session() as session:
-      events = session.read_transaction(_find_events, username)
+      events = session.execute_read(_find_events, username)
       return events
 
 def _find_events(tx, username):
@@ -156,13 +156,12 @@ def main():
    # create_attends_relationship("Alice", "Triathlon")
    # create_attends_relationship("Bob", "Triathlon")
 
-   print(find_users_that_like_hobby("Cycling"))
+   print(f"All user that like Cycling: {find_users_that_like_hobby("Cycling")}")
 
-   print(find_users_that_attend_event("Triathlon"))
-
+   print(f"All user that attend Triathlon: {find_users_that_attend_event("Triathlon")}")
 
    events_for_charlie = find_events_for_user("Charlie")
-   print(events_for_charlie)
+   print(f"Potential Events for Charlie: {events_for_charlie}")
 
 main()
 
